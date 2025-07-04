@@ -3,10 +3,10 @@ import os
 import wave
 
 def preprocess_audio(pfile):
+    filename, ext = os.path.splitext(pfile)
+    ofile = pfile if ext == '.wav' else f"{filename}.wav"
+
     audio = AudioSegment.from_file(pfile)
-    file = os.path.splitext(pfile)[0]
-    ofile = f"{file}.wav"
-    
     audio.export(ofile, format="wav", parameters=["-ac", "1", "-ar", "16000"])
     
     with wave.open(ofile, 'rb') as audiofile:
