@@ -1,2 +1,2 @@
-pyannote-audio
+pyannote.audio
 python-dotenv
