@@ -1,0 +1,54 @@
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from schema import *
+import os
+
+TASKS_TABLE = 'tasks'
+connection = None
+
+
+def init_db_client():
+    global connection
+    try:
+        connection = psycopg2.connect(
+            user=os.getenv("user"),
+            password=os.getenv("password"),
+            host=os.getenv("host"),
+            port=os.getenv("port"),
+            dbname=os.getenv("dbname"),
+            cursor_factory=RealDictCursor
+        )
+
+        cursor = connection.cursor()
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+
+
+def add_task(query: TranscribeQuery):
+    with connection.cursor() as cursor:
+        cursor.execute(f'INSERT INTO tasks(file_url, file_name) VALUES (\'{query.file_url}\', \'{query.file_name}\') RETURNING id;')
+        connection.commit()
+        return cursor.fetchone()
+
+
+def get_task_status(task_id: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f'SELECT status FROM tasks WHERE id = \'{task_id}\';')
+        return cursor.fetchone()
+
+
+def get_waiting_task():
+    with connection.cursor() as cursor:
+        cursor.execute(f'SELECT * FROM tasks WHERE status = \'wait\'')
+        query_result = cursor.fetchone()
+        if query_result:
+            return Task(**query_result)
+
+        return query_result
+
+
+def set_task_status(task_id: str, status: TaskStatus):
+    with connection.cursor() as cursor:
+        cursor.execute(f'UPDATE tasks SET status = \'{status.value}\' WHERE id = \'{task_id}\'')
+        connection.commit()
+        return cursor.rowcount
