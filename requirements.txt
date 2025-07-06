@@ -1,3 +1,7 @@
 pyannote.audio
 python-dotenv
 openai
+fastapi
+pydantic
+psycopg2-binary
+supabase
