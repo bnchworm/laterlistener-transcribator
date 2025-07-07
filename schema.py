@@ -3,9 +3,9 @@ import enum
 
 
 class TaskStatus(enum.Enum):
-    wait = 'wait'
-    run = 'run'
-    finish = 'finish'
+    wait = 'WAIT'
+    running = 'RUNNING'
+    finished = 'FINISHED'
 
 
 class TranscribeQuery(BaseModel):

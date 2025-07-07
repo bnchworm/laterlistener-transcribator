@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: LaterListener Transcribator API
+  version: 1.0.0
+  description: |
+    API для сервиса транскрипций и аутентификации через Telegram.
+    Все ответы и запросы в формате JSON, кроме скачивания файлов.
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер
+
+paths:
+  /auth/register:
+    post:
+      summary: Регистрация/логин через Telegram
+      description: Регистрирует пользователя через Telegram (ожидает telegram_id в теле запроса)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telegram_id:
+                  type: string
+                  example: "123456789"
+              required:
+                - telegram_id
+      responses:
+        '200':
+          description: Успешная регистрация/логин
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/login:
+    get:
+      summary: Получить текущего пользователя/сессию
+      description: Возвращает текущего авторизованного пользователя (проверка сессии)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Текущий пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Не авторизован
+
+  /auth/logout:
+    post:
+      summary: Выйти из системы
+      description: Логаут (убирает токен из cookie)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Успешный выход
+
+  /api/transcripts:
+    get:
+      summary: Получить список всех транскрипций
+      description: Возвращает список всех транскрипций пользователя
+      responses:
+        '200':
+          description: Список транскрипций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transcript'
+
+  /api/transcripts/{id}:
+    get:
+      summary: Получить одну транскрипцию
+      description: Возвращает одну транскрипцию по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Транскрипция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcript'
+        '404':
+          description: Не найдено
+    put:
+      summary: Обновить транскрипцию
+      description: Обновляет транскрипцию (например, после редактирования текста или спикера)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranscriptUpdate'
+      responses:
+        '200':
+          description: Обновленная транскрипция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcript'
+        '404':
+          description: Не найдено
+
+  /api/transcripts/{id}/summary:
+    get:
+      summary: Получить саммари для транскрипции
+      description: Возвращает краткое содержание транскрипции
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Саммари транскрипции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '404':
+          description: Не найдено
+
+  /api/transcripts/{id}/download:
+    get:
+      summary: Скачать транскрипцию
+      description: Скачивает расшифровку в формате TXT или PDF
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: true
+          schema:
+            type: string
+            enum: [txt, pdf]
+      responses:
+        '200':
+          description: Файл транскрипции
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Не найдено
+
+  /api/upload:
+    post:
+      summary: Загрузить аудиофайл для транскрипции
+      description: Загружает аудиофайл для транскрибирования
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Файл успешно загружен и принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        telegram_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Transcript:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        speakers:
+          type: array
+          items:
+            type: string
+    TranscriptUpdate:
+      type: object
+      properties:
+        text:
+          type: string
+        speakers:
+          type: array
+          items:
+            type: string
+    Summary:
+      type: object
+      properties:
+        summary:
+          type: string
+    UploadResponse:
+      type: object
+      properties:
+        transcript_id:
+          type: string
+        status:
+          type: string
+          example: "processing"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

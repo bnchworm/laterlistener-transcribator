@@ -2,15 +2,16 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from schema import *
 from psdb_client import init_db_client, add_task, get_task_status
+from contextlib import asynccontextmanager
 
 
-app = FastAPI()
-
-
-@app.on_event("startup")
-def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     load_dotenv()
     init_db_client()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post('/transcribe')

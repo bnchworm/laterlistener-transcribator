@@ -11,11 +11,11 @@ def init_db_client():
     global connection
     try:
         connection = psycopg2.connect(
-            user=os.getenv("user"),
-            password=os.getenv("password"),
-            host=os.getenv("host"),
-            port=os.getenv("port"),
-            dbname=os.getenv("dbname"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT"),
+            dbname=os.getenv("DB_DBNAME"),
             cursor_factory=RealDictCursor
         )
 
@@ -26,7 +26,7 @@ def init_db_client():
 
 def add_task(query: TranscribeQuery):
     with connection.cursor() as cursor:
-        cursor.execute(f'INSERT INTO tasks(file_url, file_name) VALUES (\'{query.file_url}\', \'{query.file_name}\') RETURNING id;')
+        cursor.execute(f'INSERT INTO tasks(id, file_url, file_name) VALUES \'(uuid_generate_v4()\', \'{query.file_url}\', \'{query.file_name}\') RETURNING id;')
         connection.commit()
         return cursor.fetchone()
 
