@@ -26,7 +26,7 @@ def init_db_client():
 
 def add_task(query: TranscribeQuery):
     with connection.cursor() as cursor:
-        cursor.execute(f'INSERT INTO task(id, file_url, file_name, status) VALUES \'(uuid_generate_v4()\', \'{query.file_url}\', \'{query.file_name}\', \'WAIT\') RETURNING id;')
+        cursor.execute(f'INSERT INTO task(id, file_url, file_name, status) VALUES (uuid_generate_v4(), \'{query.file_url}\', \'{query.file_name}\', \'WAIT\') RETURNING id;')
         connection.commit()
         return cursor.fetchone()
 
