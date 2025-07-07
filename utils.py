@@ -10,7 +10,6 @@ SUPPORTED_AUDIO_FORMATS = (".mp3", ".m4a", ".wav", ".ogg", ".webm")
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True) 
 
-
 def get_logger(name: str = "general") -> logging.Logger:
     logger = logging.getLogger(f"transcriber.{name}")
     if logger.handlers:

@@ -5,7 +5,7 @@ import os
 
 def transcription(audio_path: str) -> List[Dict]:
     client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
-    audio_file = open("audio.wav", "rb")
+    audio_file = open(audio_path, "rb")
 
     transcription_obj = client.audio.transcriptions.create(
         file=audio_file,
