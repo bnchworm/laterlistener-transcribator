@@ -52,3 +52,19 @@ def set_task_status(task_id: str, status: TaskStatus):
         cursor.execute(f'UPDATE task SET status = \'{status.value}\' WHERE id = \'{task_id}\'')
         connection.commit()
         return cursor.rowcount
+
+
+def get_task(task_id: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f'SELECT * FROM task WHERE id = %s;', (task_id,))
+        result = cursor.fetchone()
+        if result:
+            return Task(**result)
+        return None
+
+
+def set_task_result_url(task_id: str, url: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f'UPDATE task SET result_url = %s WHERE id = %s', (url, task_id))
+        connection.commit()
+        return cursor.rowcount

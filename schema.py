@@ -18,3 +18,4 @@ class Task(BaseModel):
     file_url: str
     file_name: str
     status: TaskStatus
+    result_url: str | None = None
