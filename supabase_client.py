@@ -23,3 +23,4 @@ def upload_file_to_supabase(file_path: str, bucket: str, dest_name) -> str:
         response = supabase_conn.storage.from_(bucket).upload(dest_name, f, {"content-type": "audio/wav"})
     public_url = supabase_conn.storage.from_(bucket).get_public_url(dest_name)
     return public_url
+

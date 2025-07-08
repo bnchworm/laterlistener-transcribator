@@ -19,3 +19,7 @@ class Task(BaseModel):
     file_name: str
     status: TaskStatus
     result_url: str | None = None
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
