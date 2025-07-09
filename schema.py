@@ -20,6 +20,7 @@ class Task(BaseModel):
     status: TaskStatus
     result_url: str | None = None
 
-class UserLogin(BaseModel):
-    username: str
-    password: str
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
