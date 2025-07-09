@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Response, HTTPException, Depends
 from dotenv import load_dotenv
+
+load_dotenv()
+
+from fastapi import FastAPI, Response, HTTPException, Depends
 from schema import TaskStatus, TranscribeQuery, TokenPair
 from psdb_client import init_db_client, add_task, get_task_status, get_task
 from contextlib import asynccontextmanager
@@ -15,7 +18,6 @@ from auth.security import (
     get_current_user_id,
 )
 
-# Supabase token/user helpers
 from supabase_client import (
     save_one_time_token,
     get_one_time_token,
@@ -33,13 +35,12 @@ from datetime import datetime, timezone
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_dotenv()
     init_db_client()
     yield
-load_dotenv()
 app = FastAPI(lifespan=lifespan)
-supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))  # type: ignore[arg-type]
-ONE_TIME_TOKEN_TTL = int(os.getenv("ONE_TIME_TOKEN_TTL", 600))  # 10 minutes default
+supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))  # type: ignore
+
+ONE_TIME_TOKEN_TTL = int(os.getenv("ONE_TIME_TOKEN_TTL", 600))
 
 @app.post('/transcribe')
 async def start_transcribe(query: TranscribeQuery):
@@ -55,19 +56,14 @@ async def get_transcribe_status(task_id: str):
 async def get_transcribe_result(task_id: str):
     task = get_task(task_id)
     if not task:
-        return {"error": "Task not found"}
+        return {"error": "Задача не найдена"}
     if task.status != TaskStatus.finished:
-        return {"error": "Task not finished"}
+        return {"error": "Задача ещё не завершена"}
     return {"result_url": task.result_url}
 
-@app.get("/protected")
-def protected(user_id: str = Depends(get_current_user_id)):
-    return {"message": f"Hello, user {user_id}!"}
-
-# 1. Bot requests creation of one-time token
+# 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")
 def create_one_time_token(telegram_id: int):
-    """Создать одноразовый токен. telegram_id передаётся как query/form параметр."""
     raw_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
 
@@ -76,15 +72,15 @@ def create_one_time_token(telegram_id: int):
     return {"token": raw_token}
 
 
-# 2. Frontend exchanges one-time token for JWT pair
+# 2. Обмен одноразового токена на пару JWT (вызывает фронтенд)
 @app.post("/auth/one-time", response_model=TokenPair)
 def auth_with_one_time(token: str):
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     record = get_one_time_token(token_hash)
     if not record:
-        raise HTTPException(status_code=401, detail="Invalid or used token")
+        raise HTTPException(status_code=401, detail="Недействительный или уже использованный токен")
 
-    # Check expiration
+    # Проверяем срок действия токена
     expires_at_str = record.get("expires_at")
     if expires_at_str:
         expires_at = datetime.fromisoformat(expires_at_str)
@@ -92,35 +88,35 @@ def auth_with_one_time(token: str):
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if expires_at < datetime.now(timezone.utc):
             delete_one_time_token(token_hash)
-            raise HTTPException(status_code=401, detail="Token expired")
+            raise HTTPException(status_code=401, detail="Срок действия токена истёк")
 
     telegram_id = record["telegram_id"]
     user = get_user_by_telegram_id(telegram_id) or create_user(telegram_id)
 
-    # Generate tokens
+    # Генерируем JWT-токены
     access_token = create_access_token(user["id"])
     refresh_token = create_refresh_token(user["id"])
 
-    # Persist refresh token hash
+    # Сохраняем хэш refresh-токена
     refresh_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
     from auth.security import REFRESH_TOKEN_TTL  # late import to avoid circular
     save_refresh_token(refresh_hash, user["id"], REFRESH_TOKEN_TTL)
 
-    # Consume one-time token
+    # Удаляем одноразовый токен
     delete_one_time_token(token_hash)
 
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
-# 3. Refresh tokens
+# 3. Обновление пары токенов по refresh-токену
 @app.post("/auth/refresh", response_model=TokenPair)
 def refresh_tokens(refresh_token: str):
     refresh_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
     record = get_refresh_token(refresh_hash)
     if not record or record.get("revoked_at") is not None:
-        raise HTTPException(status_code=401, detail="Invalid or revoked refresh token")
+        raise HTTPException(status_code=401, detail="Недействительный или отозванный refresh-токен")
 
-    # Verify expiration
+    # Проверяем срок действия токена
     expires_at_str = record.get("expires_at")
     if expires_at_str:
         exp = datetime.fromisoformat(expires_at_str)
@@ -128,10 +124,9 @@ def refresh_tokens(refresh_token: str):
             exp = exp.replace(tzinfo=timezone.utc)
         if exp < datetime.now(timezone.utc):
             revoke_refresh_token(refresh_hash)
-            raise HTTPException(status_code=401, detail="Refresh token expired")
+            raise HTTPException(status_code=401, detail="Срок действия refresh-токена истёк")
 
-    # Decode JWT to ensure signature and expiry correct
-    from auth.security import _decode_token  # type: ignore
+    from auth.security import _decode_token 
     try:
         payload_data = _decode_token(refresh_token)
     except HTTPException:
@@ -139,11 +134,11 @@ def refresh_tokens(refresh_token: str):
         raise
 
     if payload_data.get("type") != "refresh":
-        raise HTTPException(status_code=401, detail="Invalid token type")
+        raise HTTPException(status_code=401, detail="Неверный тип токена")
 
     user_id = payload_data["sub"]
 
-    # Rotate tokens: revoke old, issue new
+    # Выполняем ротацию: отзываем старый refresh-токен и выпускаем новый
     revoke_refresh_token(refresh_hash)
 
     new_access = create_access_token(user_id)
@@ -154,7 +149,7 @@ def refresh_tokens(refresh_token: str):
 
     return TokenPair(access_token=new_access, refresh_token=new_refresh)
 
-# New protected route using Authorization header
+# Новый защищённый эндпоинт, использующий заголовок Authorization
 @app.get("/me")
 def me(user_id: str = Depends(get_current_user_id)):
     return {"user_id": user_id}

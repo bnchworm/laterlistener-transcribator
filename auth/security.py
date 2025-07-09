@@ -1,27 +1,23 @@
-from fastapi import HTTPException, Cookie, Header, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, Cookie, Depends
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 import os
 from typing import Optional
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "CHANGE_ME")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 
-# TTLs from env with sane defaults
-ACCESS_TOKEN_TTL = int(os.getenv("ACCESS_TOKEN_TTL", 900))          # 15 minutes
-REFRESH_TOKEN_TTL = int(os.getenv("REFRESH_TOKEN_TTL", 604800))     # 7 days
+# Время жизни токенов (секунд): access по умолчанию 15 минут, refresh — 7 дней
+ACCESS_TOKEN_TTL = int(os.getenv("ACCESS_TOKEN_TTL", 900))
+REFRESH_TOKEN_TTL = int(os.getenv("REFRESH_TOKEN_TTL", 604800))
 
-# --------------------------------------------------------------------
-# Token creation helpers
-# --------------------------------------------------------------------
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
 def create_access_token(uid: str) -> str:
-    """Create short-lived access JWT."""
     payload = {
         "sub": uid,
         "type": "access",
@@ -31,7 +27,6 @@ def create_access_token(uid: str) -> str:
 
 
 def create_refresh_token(uid: str) -> str:
-    """Create long-lived refresh JWT."""
     payload = {
         "sub": uid,
         "type": "refresh",
@@ -39,57 +34,31 @@ def create_refresh_token(uid: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
-# --------------------------------------------------------------------
-# Verification helpers
-# --------------------------------------------------------------------
 
 def _decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return payload
     except JWTError:
-        raise HTTPException(status_code=403, detail="Invalid or expired token")
+        raise HTTPException(status_code=403, detail="Токен недействителен или срок его действия истёк")
 
 
 def verify_access_token(token: str) -> str:
     payload = _decode_token(token)
     if payload.get("type") != "access":
-        raise HTTPException(status_code=403, detail="Invalid token type")
+        raise HTTPException(status_code=403, detail="Неверный тип токена")
     return payload["sub"]
 
 
-# --------------------------------------------------------------------
-# Dependency: extract Bearer token from Authorization header
-# --------------------------------------------------------------------
+# Built-in bearer scheme for dependency injection
+security = HTTPBearer()
 
-_http_bearer = HTTPBearer(auto_error=False)
+# Redefined to use HTTPBearer credentials instead of raw header parsing
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    return verify_access_token(credentials.credentials)
 
-
-def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Security(_http_bearer),
-    authorization: Optional[str] = Header(None),
-) -> str:
-    """Return user_id encoded in a valid access JWT.
-
-    Works with both standard Bearer auth (preferred) and manual header input in Swagger.
-    """
-    token: Optional[str] = None
-
-    # Preferred path: parsed by HTTPBearer
-    if credentials and credentials.scheme.lower() == "bearer":
-        token = credentials.credentials
-    # Fallback: raw header string (if user entered via parameters list)
-    elif authorization and authorization.lower().startswith("bearer "):
-        token = authorization.split(" ", 1)[1]
-
-    if not token:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    return verify_access_token(token)
-
-# Kept for backward compatibility with cookie-based auth
 
 def access_token_required(token: str = Cookie(None)):
     if not token:
-        raise HTTPException(status_code=403, detail="Token missing")
+        raise HTTPException(status_code=403, detail="Отсутствует токен в cookie")
     return verify_access_token(token)
