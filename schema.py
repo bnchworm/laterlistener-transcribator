@@ -19,3 +19,8 @@ class Task(BaseModel):
     file_name: str
     status: TaskStatus
     result_url: str | None = None
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
