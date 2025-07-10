@@ -24,3 +24,6 @@ class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+class OneTimeTokenQuery(BaseModel):
+    telegram_id: int

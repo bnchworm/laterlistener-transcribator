@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, Response, HTTPException, Depends
-from schema import TaskStatus, TranscribeQuery, TokenPair
+from schema import TaskStatus, TranscribeQuery, TokenPair, OneTimeTokenQuery
 from psdb_client import init_db_client, add_task, get_task_status, get_task
 from contextlib import asynccontextmanager
 
@@ -16,6 +16,7 @@ from auth.security import (
     create_access_token,
     create_refresh_token,
     get_current_user_id,
+    verify_service_token
 )
 
 from supabase_client import (
@@ -43,17 +44,17 @@ supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_
 ONE_TIME_TOKEN_TTL = int(os.getenv("ONE_TIME_TOKEN_TTL", 600))
 
 @app.post('/transcribe')
-async def start_transcribe(query: TranscribeQuery, user_id: str = Depends(get_current_user_id)):
+async def start_transcribe(query: TranscribeQuery, _: None = Depends(verify_service_token)):
     return add_task(query)
 
 
 @app.get('/status/{task_id}')
-async def get_transcribe_status(task_id: str, user_id: str = Depends(get_current_user_id)):
+async def get_transcribe_status(task_id: str, _: None = Depends(verify_service_token)):
     return get_task_status(task_id)
 
 
 @app.get('/result/{task_id}')
-async def get_transcribe_result(task_id: str, user_id: str = Depends(get_current_user_id)):
+async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_token)):
     task = get_task(task_id)
     if not task:
         return {"error": "Задача не найдена"}
@@ -63,11 +64,11 @@ async def get_transcribe_result(task_id: str, user_id: str = Depends(get_current
 
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")
-def create_one_time_token(telegram_id: int):
+def create_one_time_token(query: OneTimeTokenQuery, _: None = Depends(verify_service_token)):
     raw_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
 
-    save_one_time_token(token_hash, telegram_id, ONE_TIME_TOKEN_TTL)
+    save_one_time_token(token_hash, query.telegram_id, ONE_TIME_TOKEN_TTL)
 
     return {"token": raw_token}
 

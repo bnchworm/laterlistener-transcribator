@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Cookie, Depends
+from fastapi import HTTPException, Cookie, Header, HTTPException, status, Depends
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 import os
@@ -61,3 +61,11 @@ def access_token_required(token: str = Cookie(None)):
     if not token:
         raise HTTPException(status_code=403, detail="Отсутствует токен в cookie")
     return verify_access_token(token)
+
+def verify_service_token(authorization: str = Header(...)):
+    SERVICE_API_TOKEN = os.getenv("SERVICE_API_TOKEN")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth header")
+    token = authorization.split(" ", 1)[1]
+    if token != SERVICE_API_TOKEN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
