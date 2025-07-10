@@ -43,17 +43,17 @@ supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_
 ONE_TIME_TOKEN_TTL = int(os.getenv("ONE_TIME_TOKEN_TTL", 600))
 
 @app.post('/transcribe')
-async def start_transcribe(query: TranscribeQuery):
+async def start_transcribe(query: TranscribeQuery, user_id: str = Depends(get_current_user_id)):
     return add_task(query)
 
 
 @app.get('/status/{task_id}')
-async def get_transcribe_status(task_id: str):
+async def get_transcribe_status(task_id: str, user_id: str = Depends(get_current_user_id)):
     return get_task_status(task_id)
 
 
 @app.get('/result/{task_id}')
-async def get_transcribe_result(task_id: str):
+async def get_transcribe_result(task_id: str, user_id: str = Depends(get_current_user_id)):
     task = get_task(task_id)
     if not task:
         return {"error": "Задача не найдена"}
