@@ -8,6 +8,7 @@ from schema import TaskStatus
 import time
 import json
 from supabase_client import upload_file_to_supabase
+import os
 
 
 PATH_TO_AUDIO_FILES = 'audio_to_process'
@@ -17,6 +18,7 @@ load_dotenv()
 init_db_client()
 
 while True:
+    print(os.getenv("SUPABASE_URL"))
     task = get_waiting_task()
     if task is None:
         time.sleep(0.5)

@@ -10,6 +10,10 @@ supabase_conn = None
 def init_supabase_client():
     global supabase_conn
     try:
+        SUPABASE_URL = os.getenv("SUPABASE_URL")
+        SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+        SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "transcriptions")
+
         if supabase_conn is None:
             supabase_conn = create_client(SUPABASE_URL, SUPABASE_KEY)
     except Exception as e:
