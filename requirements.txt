@@ -1,4 +1,4 @@
-pyannote.audio
+pyannote-audio
 python-dotenv
 openai
 fastapi
@@ -7,3 +7,5 @@ psycopg2-binary
 supabase
 python-jose[cryptography]
 passlib[bcrypt]
+runpod
+torch
