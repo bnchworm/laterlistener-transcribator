@@ -80,6 +80,13 @@ def get_transcripts(user_id: str = Depends(get_current_user_id)):
     tasks = get_tasks_by_user(str(tg_id))
     return tasks
 
+@app.get('/api/transcripts/{transcript_id}')
+def get_transcript_by_id(transcript_id: str, user_id: str = Depends(get_current_user_id)):
+    task = get_task(transcript_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Транскрибация не найдена")
+    return task
+
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")
 def create_one_time_token(query: OneTimeTokenQuery, _: None = Depends(verify_service_token)):
