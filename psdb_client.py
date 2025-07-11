@@ -71,6 +71,6 @@ def set_task_result_url(task_id: str, url: str):
 
 def get_tasks_by_user(user_id: str):
     with connection.cursor() as cursor:
-        cursor.execute('SELECT * FROM task WHERE telegram_id = %s ORDER BY id DESC;', (user_id,))
+        cursor.execute('SELECT result_url FROM task WHERE user_id = %s AND result_url IS NOT NULL ORDER BY id DESC;', (user_id,))
         results = cursor.fetchall()
-        return [Task(**row) for row in results]
+        return [row['result_url'] for row in results]

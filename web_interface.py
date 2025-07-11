@@ -71,10 +71,10 @@ async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_t
         return {"error": "Задача ещё не завершена"}
     return {"result_url": task.result_url}
 
-@app.get('/transcripts')
+@app.get('/api/transcripts')
 def get_transcripts(user_id: str = Depends(get_current_user_id)):
-    tasks = get_tasks_by_user(user_id)
-    return [task.dict() for task in tasks]
+    result_urls = get_tasks_by_user(user_id)
+    return [{"result_url": url} for url in result_urls]
 
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")
