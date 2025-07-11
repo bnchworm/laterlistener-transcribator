@@ -75,8 +75,10 @@ async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_t
 @app.get('/api/transcripts')
 def get_transcripts(user_id: str = Depends(get_current_user_id)):
     tg_id = get_telegram_id_by_user_id(user_id=user_id)
-    result_urls = get_tasks_by_user(tg_id)
-    return [{"result_url": url} for url in result_urls]
+    if tg_id is None:
+        return []
+    tasks = get_tasks_by_user(str(tg_id))
+    return tasks
 
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")
