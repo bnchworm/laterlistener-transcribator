@@ -21,12 +21,12 @@ def init_supabase_client():
     except Exception as e:
         print(f"Failed to connect: {e}")
 
-def upload_file_to_supabase(file_path: str, bucket: str, dest_name) -> str:
+def upload_file_to_supabase(file_path: str, bucket: str, dest_name, content_type: str = "application/octet-stream") -> str:
     global supabase_conn
     if supabase_conn is None:
         init_supabase_client()
     with open(file_path, "rb") as f:
-        response = supabase_conn.storage.from_(bucket).upload(dest_name, f, {"content-type": "audio/wav"})
+        response = supabase_conn.storage.from_(bucket).upload(dest_name, f, {"content-type": content_type})
     public_url = supabase_conn.storage.from_(bucket).get_public_url(dest_name)
     return public_url
 

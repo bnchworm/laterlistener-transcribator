@@ -36,6 +36,6 @@ while True:
         json.dump(align_result, f, ensure_ascii=False)
 
     # Загружаем результат в Supabase и сохраняем ссылку
-    public_url = upload_file_to_supabase(f'{PATH_TO_TRANSCRIPTIONS}/{base_file_name}.json', 'transcriptions', f'{base_file_name}.json')
+    public_url = upload_file_to_supabase(f'{PATH_TO_TRANSCRIPTIONS}/{base_file_name}.json', 'transcriptions', f'{base_file_name}.json', 'application/json')
     set_task_result_url(task.id, public_url)
     set_task_status(task.id, TaskStatus.finished)
