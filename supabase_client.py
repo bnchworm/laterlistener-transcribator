@@ -140,4 +140,16 @@ def revoke_refresh_token(token_hash: str):
     _ensure_client()
     supabase_conn.table(REFRESH_TOKENS_TABLE).update({"revoked_at": _now_utc().isoformat()}).eq("token_hash", token_hash).execute()
 
-
+def get_telegram_id_by_user_id(user_id: str) -> Optional[int]:
+    _ensure_client()
+    result = (
+        supabase_conn
+        .table(USERS_TABLE)
+        .select("telegram_id")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if result.data and len(result.data) > 0:
+        return result.data[0].get("telegram_id")
+    return None

@@ -29,6 +29,7 @@ from supabase_client import (
     save_refresh_token,
     get_refresh_token,
     revoke_refresh_token,
+    get_telegram_id_by_user_id
 )
 
 import secrets
@@ -73,7 +74,8 @@ async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_t
 
 @app.get('/api/transcripts')
 def get_transcripts(user_id: str = Depends(get_current_user_id)):
-    result_urls = get_tasks_by_user(user_id)
+    tg_id = get_telegram_id_by_user_id(user_id=user_id)
+    result_urls = get_tasks_by_user(tg_id)
     return [{"result_url": url} for url in result_urls]
 
 # 1. Создание одноразового токена (вызывает бот)
