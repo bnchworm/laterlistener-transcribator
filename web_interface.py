@@ -5,7 +5,7 @@ load_dotenv()
 from fastapi import FastAPI, Response, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from schema import TaskStatus, TranscribeQuery, TokenPair, OneTimeTokenQuery
-from psdb_client import init_db_client, add_task, get_task_status, get_task
+from psdb_client import init_db_client, add_task, get_task_status, get_task, get_tasks_by_user
 from contextlib import asynccontextmanager
 
 from supabase_client import upload_file_to_supabase
@@ -70,6 +70,11 @@ async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_t
     if task.status != TaskStatus.finished:
         return {"error": "Задача ещё не завершена"}
     return {"result_url": task.result_url}
+
+@app.get('/transcripts')
+def get_transcripts(user_id: str = Depends(get_current_user_id)):
+    tasks = get_tasks_by_user(user_id)
+    return [task.dict() for task in tasks]
 
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")

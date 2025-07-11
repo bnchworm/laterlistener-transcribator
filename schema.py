@@ -11,6 +11,7 @@ class TaskStatus(enum.Enum):
 class TranscribeQuery(BaseModel):
     file_url: str
     file_name: str
+    telegram_id: int
 
 
 class Task(BaseModel):
@@ -19,6 +20,7 @@ class Task(BaseModel):
     file_name: str
     status: TaskStatus
     result_url: str | None = None
+    telegram_id: int
 
 class TokenPair(BaseModel):
     access_token: str
