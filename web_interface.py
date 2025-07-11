@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, Response, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from schema import TaskStatus, TranscribeQuery, TokenPair, OneTimeTokenQuery
 from psdb_client import init_db_client, add_task, get_task_status, get_task
 from contextlib import asynccontextmanager
@@ -38,7 +39,15 @@ from datetime import datetime, timezone
 async def lifespan(app: FastAPI):
     init_db_client()
     yield
+
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  #список разрешённых доменов, например: ["https://your-frontend.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))  # type: ignore
 
 ONE_TIME_TOKEN_TTL = int(os.getenv("ONE_TIME_TOKEN_TTL", 600))
