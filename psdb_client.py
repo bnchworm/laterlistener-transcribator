@@ -26,7 +26,7 @@ def init_db_client():
 
 def add_task(query: TranscribeQuery):
     with connection.cursor() as cursor:
-        cursor.execute(f'INSERT INTO task(id, file_url, file_name, status) VALUES (uuid_generate_v4(), \'{query.file_url}\', \'{query.file_name}\', \'WAIT\') RETURNING id;')
+        cursor.execute(f'INSERT INTO task(id, file_url, file_name, status, telegram_id) VALUES (uuid_generate_v4(), \'{query.file_url}\', \'{query.file_name}\', \'WAIT\', \'{query.telegram_id}\') RETURNING id;')
         connection.commit()
         return cursor.fetchone()
 
@@ -68,3 +68,9 @@ def set_task_result_url(task_id: str, url: str):
         cursor.execute(f'UPDATE task SET result_url = %s WHERE id = %s', (url, task_id))
         connection.commit()
         return cursor.rowcount
+
+def get_tasks_by_user(user_id: str):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT * FROM task WHERE telegram_id = %s ORDER BY id DESC;', (user_id,))
+        results = cursor.fetchall()
+        return results

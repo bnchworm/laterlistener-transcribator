@@ -1,3 +1,4 @@
+
 pyannote.audio
 python-dotenv
 openai
@@ -7,3 +8,4 @@ psycopg2-binary
 supabase
 python-jose[cryptography]
 passlib[bcrypt]
+pydub==0.25.1

@@ -5,7 +5,7 @@ load_dotenv()
 from fastapi import FastAPI, Response, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from schema import TaskStatus, TranscribeQuery, TokenPair, OneTimeTokenQuery
-from psdb_client import init_db_client, add_task, get_task_status, get_task
+from psdb_client import init_db_client, add_task, get_task_status, get_task, get_tasks_by_user
 from contextlib import asynccontextmanager
 
 from supabase_client import upload_file_to_supabase
@@ -29,6 +29,7 @@ from supabase_client import (
     save_refresh_token,
     get_refresh_token,
     revoke_refresh_token,
+    get_telegram_id_by_user_id
 )
 
 import secrets
@@ -43,7 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  #список разрешённых доменов, например: ["https://your-frontend.com"]
+    allow_origins=["https://139.59.145.185"],  #список разрешённых доменов, например: ["https://your-frontend.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,6 +71,21 @@ async def get_transcribe_result(task_id: str, _: None = Depends(verify_service_t
     if task.status != TaskStatus.finished:
         return {"error": "Задача ещё не завершена"}
     return {"result_url": task.result_url}
+
+@app.get('/api/transcripts')
+def get_transcripts(user_id: str = Depends(get_current_user_id)):
+    tg_id = get_telegram_id_by_user_id(user_id=user_id)
+    if tg_id is None:
+        return []
+    tasks = get_tasks_by_user(str(tg_id))
+    return tasks
+
+@app.get('/api/transcripts/{transcript_id}')
+def get_transcript_by_id(transcript_id: str, user_id: str = Depends(get_current_user_id)):
+    task = get_task(transcript_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Транскрибация не найдена")
+    return task
 
 # 1. Создание одноразового токена (вызывает бот)
 @app.post("/token/one-time/create")

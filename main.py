@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from diarization import diarize
+from preprocessor import preprocess_audio
 from transcription import transcription
 from aligner import align_speakers_with_text
 from psdb_client import init_db_client, get_waiting_task, set_task_status, set_task_result_url
@@ -15,7 +16,7 @@ PATH_TO_AUDIO_FILES = 'audio_to_process'
 PATH_TO_TRANSCRIPTIONS = 'transcriptions'
 
 load_dotenv()
-init_db_client()
+init_db_client
 
 async def main():
     while True:
