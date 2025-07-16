@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from diarization import diarize
+from preprocessor import preprocess_audio
 from transcription import transcription
 from aligner import align_speakers_with_text
 from psdb_client import init_db_client, get_waiting_task, set_task_status, set_task_result_url
@@ -28,6 +29,7 @@ while True:
 
     path_to_audio = os.path.join(PATH_TO_AUDIO_FILES, task.file_name)
     urlretrieve(task.file_url, path_to_audio)
+    path_to_audio = preprocess_audio(path_to_audio)
     diarization_result = diarize(path_to_audio)
     transcription_result = transcription(path_to_audio)
     align_result = align_speakers_with_text(transcription_result, diarization_result)

@@ -6,6 +6,5 @@ def preprocess_audio(pfile):
     ofile = pfile if ext == '.wav' else f"{filename}.wav"
     if ext != ".wav":
         AudioSegment.from_file(pfile).export(ofile, format="wav")
-
-path_to_file = "path"
-preprocess_audio(path_to_file)
+        os.remove(pfile)
+    return ofile
