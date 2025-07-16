@@ -16,7 +16,7 @@ PATH_TO_AUDIO_FILES = 'audio_to_process'
 PATH_TO_TRANSCRIPTIONS = 'transcriptions'
 
 load_dotenv()
-init_db_client
+init_db_client()
 
 async def main():
     while True:
