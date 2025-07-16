@@ -31,6 +31,7 @@ async def main():
 
             path_to_audio = os.path.join(PATH_TO_AUDIO_FILES, task.file_name)
             urlretrieve(task.file_url, path_to_audio)
+            path_to_audio = preprocess_audio(path_to_audio)
             diarization_task = asyncio.create_task(asyncio.to_thread(diarize, path_to_audio))
             transcription_task = asyncio.create_task(asyncio.to_thread(transcription, path_to_audio))
             diarization_result, transcription_result = await asyncio.gather(diarization_task, transcription_task)
