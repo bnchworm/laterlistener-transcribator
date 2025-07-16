@@ -1,1 +1,11 @@
+
+pyannote.audio
+python-dotenv
+openai
+fastapi
+pydantic
+psycopg2-binary
+supabase
+python-jose[cryptography]
+passlib[bcrypt]
 pydub==0.25.1
